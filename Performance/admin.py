@@ -9,9 +9,9 @@ class PerformanceTestPlanAdmin(admin.ModelAdmin):
 
 @admin.register(PerformanceConfig)
 class PerformanceConfigAdmin(admin.ModelAdmin):
-    list_display = ['plan', 'vus', 'duration', 'host', 'endpoint']
-    list_filter = ['request_method']
-    search_fields = ['host', 'endpoint']
+    list_display = ['plan', 'vus', 'duration', 'control_mode', 'test_mode']
+    list_filter = ['control_mode', 'test_mode']
+    search_fields = ['plan__name']
 
 @admin.register(PerformancePreset)
 class PerformancePresetAdmin(admin.ModelAdmin):
@@ -21,6 +21,6 @@ class PerformancePresetAdmin(admin.ModelAdmin):
 
 @admin.register(PerformanceReport)
 class PerformanceReportAdmin(admin.ModelAdmin):
-    list_display = ['plan', 'start_time', 'end_time']
-    list_filter = ['start_time']
+    list_display = ['plan', 'created_time', 'performance_score']
+    list_filter = ['created_time']
     search_fields = ['plan__name']

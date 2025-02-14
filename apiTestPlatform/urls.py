@@ -22,7 +22,7 @@ from rest_framework import routers
 
 from BugManage.views import BugManageView
 from Cronjob.views import CronJobView
-from Performance.views import PerformanceTestPlanViewSet, PerformanceConfigViewSet
+from Performance.views import PerformanceTestPlanViewSet, PerformanceConfigViewSet, PerformanceReportViewSet
 from TestTask.views import TestTaskView, TestRecordView, TestReportView
 from apiTestPlatform import settings
 from users.views import LoginView, RefreshView
@@ -68,8 +68,10 @@ urlpatterns = [
     ]
 
 # 注册性能测试相关路由
-router.register('api/v1/performance/plans', PerformanceTestPlanViewSet)
-router.register('api/v1/performance/configs', PerformanceConfigViewSet)
+router.register('api/performance/plans', PerformanceTestPlanViewSet)
+router.register('api/performance/configs', PerformanceConfigViewSet)
+router.register('api/performance/reports', PerformanceReportViewSet)
+# router.register('api/performance/metrics', PerformanceMetricsViewSet)
 # 注册项目管理的路由
 router.register('api/testPro/projects', TestProjectView)
 # 注册测试环境管理的路由

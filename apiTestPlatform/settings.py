@@ -252,6 +252,7 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 # Redis配置
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
+REDIS_DB = 0
 
 # Celery配置
 CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/3'

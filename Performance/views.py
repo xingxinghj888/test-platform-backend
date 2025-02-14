@@ -1,8 +1,9 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import PerformanceTestPlan, PerformanceConfig, PerformancePreset, PerformanceReport
 from .serializer import (
     PerformanceTestPlanSerializer, PerformanceConfigSerializer,
@@ -13,9 +14,66 @@ class PerformanceTestPlanViewSet(viewsets.ModelViewSet):
     queryset = PerformanceTestPlan.objects.all()
     serializer_class = PerformanceTestPlanSerializer
     permission_classes = [IsAuthenticated]
-
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['project', 'status']
+    search_fields = ['name', 'description']
+    ordering_fields = ['created_time', 'updated_time']
+    ordering = ['-created_time']
+    
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def copy(self, request, pk=None):
+        """复制测试计划"""
+        original_plan = self.get_object()
+        new_plan_data = {
+            'name': request.data.get('name', f'{original_plan.name}_copy'),
+            'description': original_plan.description,
+            'project': original_plan.project,
+            'creator': request.user
+        }
+        
+        new_plan = PerformanceTestPlan.objects.create(**new_plan_data)
+        new_plan.scenes.set(original_plan.scenes.all())
+        
+        serializer = self.get_serializer(new_plan)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'])
+    def batch_delete(self, request):
+        """批量删除测试计划"""
+        plan_ids = request.data.get('plan_ids', [])
+        if not plan_ids:
+            return Response({'error': '未选择要删除的计划'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        PerformanceTestPlan.objects.filter(id__in=plan_ids).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['post'])
+    def batch_copy(self, request):
+        """批量复制测试计划"""
+        plan_ids = request.data.get('plan_ids', [])
+        if not plan_ids:
+            return Response({'error': '未选择要复制的计划'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        new_plans = []
+        for plan_id in plan_ids:
+            try:
+                original_plan = PerformanceTestPlan.objects.get(id=plan_id)
+                new_plan = PerformanceTestPlan.objects.create(
+                    name=f'{original_plan.name}_copy',
+                    description=original_plan.description,
+                    project=original_plan.project,
+                    creator=request.user
+                )
+                new_plan.scenes.set(original_plan.scenes.all())
+                new_plans.append(new_plan)
+            except PerformanceTestPlan.DoesNotExist:
+                continue
+                
+        serializer = self.get_serializer(new_plans, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def run(self, request, pk=None):
