@@ -135,23 +135,16 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-# 本地环境数据库配置
+# 数据库配置从环境变量读取
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'apitest4',
-        'USER': 'root',
-        'PASSWORD': 'root123456',
-        'PORT': 3306,
-        'HOST': 'localhost',
-        # 数据库连接池配置
-        'CONN_MAX_AGE': 60,  # 连接的最大生命周期（秒）
+        'NAME': os.getenv('MYSQL_DATABASE', 'apitest4'),
+        'USER': os.getenv('MYSQL_USER', 'root'),
+        'PASSWORD': os.getenv('MYSQL_PASSWORD', 'root123456'),
+        'PORT': int(os.getenv('MYSQL_PORT', '3306')),
+        'HOST': os.getenv('MYSQL_HOST', 'localhost'),
+        'CONN_MAX_AGE': 60,
         'OPTIONS': {
             'charset': 'utf8mb4',
             'connect_timeout': 10,
@@ -159,6 +152,39 @@ DATABASES = {
         }
     }
 }
+
+# Redis配置从环境变量读取
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
+REDIS_DB = int(os.getenv('REDIS_DB', '0'))
+
+# Celery Redis配置
+CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}' if REDIS_PASSWORD else f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+
+# Django缓存配置
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': CELERY_BROKER_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+# Channels配置
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [(REDIS_HOST, REDIS_PORT)],
+            'password': REDIS_PASSWORD if REDIS_PASSWORD else None,
+        },
+    },
+}
+
 # # 生产环境数据库配置
 # DATABASES = {
 #     'default': {
